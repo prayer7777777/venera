@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:venera/foundation/appdata.dart';
-import 'package:venera/pages/categories_page.dart';
 import 'package:venera/pages/search_page.dart';
 import 'package:venera/pages/settings/settings_page.dart';
 import 'package:venera/utils/translations.dart';
@@ -10,6 +9,7 @@ import '../foundation/app.dart';
 import 'explore_page.dart';
 import 'favorites/favorites_page.dart';
 import 'home_page.dart';
+import 'management_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -52,8 +52,8 @@ class _MainPageState extends State<MainPage> {
     const ExplorePage(
       key: PageStorageKey('explore'),
     ),
-    const CategoriesPage(
-      key: PageStorageKey('categories'),
+    const ManagementPage(
+      key: PageStorageKey('management'),
     ),
   ];
 
@@ -67,7 +67,7 @@ class _MainPageState extends State<MainPage> {
       navigatorKey: _navigatorKey!,
       paneItems: [
         PaneItemEntry(
-          label: 'Home'.tl,
+          label: 'Discover'.tl,
           icon: Icons.home_outlined,
           activeIcon: Icons.home,
         ),
@@ -82,9 +82,9 @@ class _MainPageState extends State<MainPage> {
           activeIcon: Icons.explore,
         ),
         PaneItemEntry(
-          label: 'Categories'.tl,
-          icon: Icons.category_outlined,
-          activeIcon: Icons.category,
+          label: 'Manage'.tl,
+          icon: Icons.dashboard_outlined,
+          activeIcon: Icons.dashboard,
         ),
       ],
       onPageChanged: (i) {

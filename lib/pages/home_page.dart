@@ -12,9 +12,9 @@ import 'package:venera/foundation/log.dart';
 import 'package:venera/pages/comic_details_page/comic_page.dart';
 import 'package:venera/pages/comic_source_page.dart';
 import 'package:venera/pages/downloading_page.dart';
-import 'package:venera/pages/follow_updates_page.dart';
 import 'package:venera/pages/history_page.dart';
 import 'package:venera/pages/image_favorites_page/image_favorites_page.dart';
+import 'package:venera/pages/management_page.dart';
 import 'package:venera/pages/search_page.dart';
 import 'package:venera/utils/data_sync.dart';
 import 'package:venera/utils/import_comic.dart';
@@ -33,15 +33,42 @@ class HomePage extends StatelessWidget {
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SearchBar(),
         const _SyncDataWidget(),
+        const _ManageShortcut(),
         const _History(),
         const _Local(),
-        const FollowUpdatesWidget(),
-        const _ComicSourceWidget(),
         const ImageFavorites(),
         SliverPadding(padding: EdgeInsets.only(top: context.padding.bottom)),
       ],
     );
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
+  }
+}
+
+class _ManageShortcut extends StatelessWidget {
+  const _ManageShortcut();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 0.6,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ListTile(
+          leading: const Icon(Icons.dashboard_outlined),
+          title: Text("Manage Library & Sources".tl),
+          subtitle: Text("Updates, sources, history, downloads and settings"
+              .tl),
+          trailing: const Icon(Icons.arrow_right),
+          onTap: () => context.to(() => const ManagementPage()),
+        ),
+      ),
+    );
   }
 }
 
