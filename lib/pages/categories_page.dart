@@ -3,12 +3,11 @@ import 'package:venera/components/components.dart';
 import 'package:venera/foundation/app.dart';
 import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
+import 'package:venera/pages/management_page.dart';
 import 'package:venera/pages/ranking_page.dart';
 import 'package:venera/pages/settings/settings_page.dart';
 import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/translations.dart';
-
-import 'comic_source_page.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});
@@ -81,7 +80,7 @@ class _CategoriesPageState extends State<CategoriesPage>
     if (ComicSource.isEmpty) {
       msg += "Please add some sources".tl;
       onTap = () {
-        context.to(() => ComicSourcePage());
+        context.to(() => const ManagementPage());
       };
     } else {
       msg += "Please check your settings".tl;

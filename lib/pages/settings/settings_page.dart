@@ -52,7 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
     "Reading",
     "Appearance",
     "Local Favorites",
-    "APP",
+    "General",
     "Network",
     "About",
     "Debug"

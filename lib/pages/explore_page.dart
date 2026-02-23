@@ -5,7 +5,7 @@ import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/global_state.dart';
 import 'package:venera/foundation/res.dart';
-import 'package:venera/pages/comic_source_page.dart';
+import 'package:venera/pages/management_page.dart';
 import 'package:venera/pages/settings/settings_page.dart';
 import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/translations.dart';
@@ -122,7 +122,7 @@ class _ExplorePageState extends State<ExplorePage>
     if (ComicSource.isEmpty) {
       msg += "Please add some sources".tl;
       onTap = () {
-        context.to(() => ComicSourcePage());
+        context.to(() => const ManagementPage());
       };
     } else {
       msg += "Please check your settings".tl;
