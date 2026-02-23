@@ -80,7 +80,7 @@ class _CategoriesPageState extends State<CategoriesPage>
     if (ComicSource.isEmpty) {
       msg += "Please add some sources".tl;
       onTap = () {
-        context.to(() => const ManagementPage());
+        showSideBar(context, const ManagementPage(), addTopPadding: true);
       };
     } else {
       msg += "Please check your settings".tl;

@@ -27,7 +27,11 @@ class _NetworkSettingsState extends State<NetworkSettings> {
         ).toSliver(),
         _CallbackSetting(
           title: "Comic Source".tl,
-          callback: () => context.to(() => const ComicSourcePage()),
+          callback: () => showSideBar(
+            context,
+            const ManagementPage(),
+            addTopPadding: true,
+          ),
           actionTitle: "Open".tl,
         ).toSliver(),
         _SliderSetting(

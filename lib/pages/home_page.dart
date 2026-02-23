@@ -65,7 +65,11 @@ class _ManageShortcut extends StatelessWidget {
           subtitle: Text("Updates, sources, history, downloads and settings"
               .tl),
           trailing: const Icon(Icons.arrow_right),
-          onTap: () => context.to(() => const ManagementPage()),
+          onTap: () => showSideBar(
+            context,
+            const ManagementPage(),
+            addTopPadding: true,
+          ),
         ),
       ),
     );

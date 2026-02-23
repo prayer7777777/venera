@@ -40,7 +40,8 @@ class _MainPageState extends State<MainPage> {
     _observer = NaviObserver();
     _navigatorKey = GlobalKey();
     App.mainNavigatorKey = _navigatorKey;
-    index = int.tryParse(appdata.settings['initialPage'].toString()) ?? 0;
+    var savedIndex = int.tryParse(appdata.settings['initialPage'].toString()) ?? 0;
+    index = savedIndex.clamp(0, _pages.length - 1);
     super.initState();
   }
 
@@ -51,9 +52,6 @@ class _MainPageState extends State<MainPage> {
     ),
     const ExplorePage(
       key: PageStorageKey('explore'),
-    ),
-    const ManagementPage(
-      key: PageStorageKey('management'),
     ),
   ];
 
@@ -81,11 +79,6 @@ class _MainPageState extends State<MainPage> {
           icon: Icons.explore_outlined,
           activeIcon: Icons.explore,
         ),
-        PaneItemEntry(
-          label: 'Manage'.tl,
-          icon: Icons.dashboard_outlined,
-          activeIcon: Icons.dashboard,
-        ),
       ],
       onPageChanged: (i) {
         setState(() {
@@ -101,6 +94,13 @@ class _MainPageState extends State<MainPage> {
               to(() => const SearchPage(), preventDuplicate: true);
             },
           ),
+        PaneActionEntry(
+          icon: Icons.tune,
+          label: "Tools".tl,
+          onTap: () {
+            showSideBar(context, const ManagementPage(), addTopPadding: true);
+          },
+        ),
         PaneActionEntry(
           icon: Icons.settings,
           label: "Settings".tl,
