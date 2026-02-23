@@ -100,6 +100,28 @@ class ComicSourcePage extends StatelessWidget {
     return shouldUpdate.length;
   }
 
+  static Future<int> autoUpdateAvailableSources() async {
+    var shouldUpdate = ComicSourceManager().availableUpdates.keys.toList();
+    int updated = 0;
+    for (var key in shouldUpdate) {
+      var source = ComicSource.find(key);
+      if (source == null) {
+        continue;
+      }
+      try {
+        await update(source, false);
+        updated++;
+      } catch (e, s) {
+        Log.error(
+          "Comic Source Auto Update",
+          "Failed to update ${source.name}: $e",
+          s,
+        );
+      }
+    }
+    return updated;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(body: const _Body());
@@ -396,6 +418,52 @@ class _ComicSourceListState extends State<_ComicSourceList> {
     return PopUpWidgetScaffold(title: "Comic Source".tl, body: buildBody());
   }
 
+  String _resolveSourceUrl(Map sourceItem) {
+    var fileName = sourceItem["fileName"];
+    var url = sourceItem["url"];
+    if (url == null || !(url.toString()).isURL) {
+      var listUrl = controller.text.trim();
+      if (listUrl
+          .replaceFirst("https://", "")
+          .replaceFirst("http://", "")
+          .contains("/")) {
+        return listUrl.substring(0, listUrl.lastIndexOf("/") + 1) + fileName;
+      }
+      return '$listUrl/$fileName';
+    }
+    return url.toString();
+  }
+
+  Future<void> _replaceSourceFromUrl(ComicSource source, String url) async {
+    ComicSourceManager().remove(source.key);
+    try {
+      var res = await AppDio().get<String>(
+        url,
+        options: Options(
+          responseType: ResponseType.plain,
+          headers: {"cache-time": "no"},
+        ),
+      );
+      await ComicSourceParser().parse(res.data!, source.filePath);
+      await io.File(source.filePath).writeAsString(res.data!);
+      ComicSourceManager().availableUpdates.remove(source.key);
+    } finally {
+      await ComicSourceManager().reload();
+    }
+  }
+
+  Future<void> _addOrReplaceSource(Map sourceItem) async {
+    var url = _resolveSourceUrl(sourceItem);
+    var sourceKey = sourceItem["key"]?.toString();
+    var existed = sourceKey != null ? ComicSource.find(sourceKey) : null;
+    if (existed != null) {
+      await _replaceSourceFromUrl(existed, url);
+    } else {
+      await widget.onAdd(url);
+    }
+    setState(() {});
+  }
+
   Widget buildBody() {
     var currentKey = ComicSource.all().map((e) => e.key).toList();
 
@@ -472,31 +540,13 @@ class _ComicSourceListState extends State<_ComicSourceList> {
         index--;
 
         var key = json![index]["key"];
-        var action = currentKey.contains(key)
-            ? const Icon(Icons.check, size: 20).paddingRight(8)
-            : Button.filled(
-                child: Text("Add".tl),
-                onPressed: () async {
-                  var fileName = json![index]["fileName"];
-                  var url = json![index]["url"];
-                  if (url == null || !(url.toString()).isURL) {
-                    var listUrl =
-                        appdata.settings['comicSourceListUrl'] as String;
-                    if (listUrl
-                        .replaceFirst("https://", "")
-                        .replaceFirst("http://", "")
-                        .contains("/")) {
-                      url =
-                          listUrl.substring(0, listUrl.lastIndexOf("/") + 1) +
-                          fileName;
-                    } else {
-                      url = '$listUrl/$fileName';
-                    }
-                  }
-                  await widget.onAdd(url);
-                  setState(() {});
-                },
-              ).fixHeight(32);
+        var hasAdded = currentKey.contains(key);
+        var action = Button.filled(
+          child: Text(hasAdded ? "Apply".tl : "Add".tl),
+          onPressed: () async {
+            await _addOrReplaceSource(json![index]);
+          },
+        ).fixHeight(32);
 
         var description = json![index]["version"];
         if (json![index]["description"] != null) {

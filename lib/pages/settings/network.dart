@@ -21,6 +21,15 @@ class _NetworkSettingsState extends State<NetworkSettings> {
           title: "DNS Overrides".tl,
           builder: () => const _DNSOverrides(),
         ).toSliver(),
+        _PopupWindowSetting(
+          title: "Comic Source Repository".tl,
+          builder: () => const _SourceRepositorySettings(),
+        ).toSliver(),
+        _CallbackSetting(
+          title: "Comic Source".tl,
+          callback: () => context.to(() => const ComicSourcePage()),
+          actionTitle: "Open".tl,
+        ).toSliver(),
         _SliderSetting(
           title: "Download Threads".tl,
           settingsIndex: 'downloadThreads',
@@ -29,6 +38,127 @@ class _NetworkSettingsState extends State<NetworkSettings> {
           max: 16,
         ).toSliver(),
       ],
+    );
+  }
+}
+
+class _SourceRepositorySettings extends StatefulWidget {
+  const _SourceRepositorySettings();
+
+  @override
+  State<_SourceRepositorySettings> createState() =>
+      _SourceRepositorySettingsState();
+}
+
+class _SourceRepositorySettingsState extends State<_SourceRepositorySettings> {
+  static const _preferredSourceListUrl =
+      "https://cdn.jsdelivr.net/gh/prayer7777777/venera-configs@fix/jm-query-404/index.json";
+  static const _officialSourceListUrl =
+      "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json";
+
+  final _urlController = TextEditingController();
+  bool _forcePreferred = false;
+
+  @override
+  void initState() {
+    _urlController.text = appdata.settings['comicSourceListUrl'] as String;
+    _forcePreferred = appdata.settings['forcePreferredSourceListUrl'] == true;
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  bool _isValidIndexUrl(String url) {
+    var uri = Uri.tryParse(url);
+    return uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: "Comic Source Repository".tl,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Repository URL".tl,
+                hintText: "A valid index.json URL".tl,
+                border: const OutlineInputBorder(),
+              ),
+              controller: _urlController,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "This URL is used when checking and importing comic sources."
+                  .tl,
+            ).paddingHorizontal(16),
+            const SizedBox(height: 8),
+            ListTile(
+              title: Text("Force preferred source repository".tl),
+              subtitle: Text(
+                "If enabled, official source URL will be auto-migrated to the preferred repository on startup."
+                    .tl,
+              ),
+              trailing: Switch(
+                value: _forcePreferred,
+                onChanged: (value) {
+                  setState(() {
+                    _forcePreferred = value;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    _urlController.text = _officialSourceListUrl;
+                    setState(() {});
+                  },
+                  child: Text("Use Official".tl),
+                ),
+                TextButton(
+                  onPressed: () {
+                    _urlController.text = _preferredSourceListUrl;
+                    setState(() {});
+                  },
+                  child: Text("Use Preferred".tl),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () {
+                var value = _urlController.text.trim();
+                if (!_isValidIndexUrl(value)) {
+                  context.showMessage(message: "Invalid URL".tl);
+                  return;
+                }
+                appdata.settings['comicSourceListUrl'] = value;
+                appdata.settings['forcePreferredSourceListUrl'] =
+                    _forcePreferred;
+                appdata.saveData();
+                context.showMessage(message: "Saved".tl);
+                App.rootPop();
+              },
+              child: Text("Save".tl),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
 }

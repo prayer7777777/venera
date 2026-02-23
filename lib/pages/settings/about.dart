@@ -65,6 +65,10 @@ class _AboutSettingsState extends State<AboutSettings> {
           title: "Check for updates on startup".tl,
           settingKey: "checkUpdateOnStart",
         ).toSliver(),
+        _SwitchSetting(
+          title: "Auto update comic sources on startup".tl,
+          settingKey: "autoUpdateComicSourcesOnStart",
+        ).toSliver(),
         ListTile(
           title: const Text("Github"),
           trailing: const Icon(Icons.open_in_new),

@@ -96,9 +96,20 @@ void _checkOldConfigs() {
     appdata.writeImplicitData();
   }
 
-  if (appdata.settings['comicSourceListUrl'].toString().contains("git.nyne.dev")) {
-    // migrate to jsdelivr cdn
-    appdata.settings['comicSourceListUrl'] = "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json";
+  const preferredSourceListUrl =
+      "https://cdn.jsdelivr.net/gh/prayer7777777/venera-configs@fix/jm-query-404/index.json";
+  const legacySourceListUrl =
+      "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json";
+  var currentSourceListUrl = appdata.settings['comicSourceListUrl'].toString();
+  if (currentSourceListUrl.contains("git.nyne.dev")) {
+    // migrate to fixed source list
+    appdata.settings['comicSourceListUrl'] = preferredSourceListUrl;
+    appdata.saveData();
+  }
+
+  if (appdata.settings['forcePreferredSourceListUrl'] == true &&
+      currentSourceListUrl == legacySourceListUrl) {
+    appdata.settings['comicSourceListUrl'] = preferredSourceListUrl;
     appdata.saveData();
   }
 }
@@ -111,7 +122,14 @@ Future<void> _checkAppUpdates() async {
   }
   appdata.implicitData['lastCheckUpdate'] = now;
   appdata.writeImplicitData();
-  ComicSourcePage.checkComicSourceUpdate();
+  try {
+    var updates = await ComicSourcePage.checkComicSourceUpdate();
+    if (updates > 0 && appdata.settings['autoUpdateComicSourcesOnStart'] == true) {
+      await ComicSourcePage.autoUpdateAvailableSources();
+    }
+  } catch (e, s) {
+    Log.error("Comic Source Auto Update", "$e", s);
+  }
   if (appdata.settings['checkUpdateOnStart']) {
     await checkUpdateUi(false, true);
   }
