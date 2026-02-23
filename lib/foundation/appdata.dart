@@ -195,6 +195,7 @@ class Settings with ChangeNotifier {
     'enableLongPressToZoom': true,
     'longPressZoomPosition': "press", // press, center
     'checkUpdateOnStart': false,
+    'autoUpdateComicSourcesOnStart': false,
     'limitImageWidth': true,
     'webdav': [], // empty means not configured
     "disableSyncFields": "", // "field1, field2, ..."
@@ -212,6 +213,7 @@ class Settings with ChangeNotifier {
     'sni': true,
     'autoAddLanguageFilter': 'none', // none, chinese, english, japanese
     'comicSourceListUrl': _defaultSourceListUrl,
+    'forcePreferredSourceListUrl': false,
     'preloadImageCount': 4,
     'followUpdatesFolder': null,
     'initialPage': '0',
@@ -308,4 +310,4 @@ function processImage(image, cid, eid, page, sourceKey) {
 ''';
 
 const _defaultSourceListUrl =
-    "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json";
+    "https://cdn.jsdelivr.net/gh/prayer7777777/venera-configs@fix/jm-query-404/index.json";
