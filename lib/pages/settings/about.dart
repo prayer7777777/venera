@@ -37,7 +37,7 @@ class _AboutSettingsState extends State<AboutSettings> {
           children: [
             const SizedBox(height: 8),
             Text(
-              "V${App.version}",
+              "V${App.fullVersion}",
               style: const TextStyle(fontSize: 16),
             ),
             Text("Venera is a free and open-source app for comic reading.".tl),
@@ -69,6 +69,10 @@ class _AboutSettingsState extends State<AboutSettings> {
           title: "Auto update comic sources on startup".tl,
           settingKey: "autoUpdateComicSourcesOnStart",
         ).toSliver(),
+        _PopupWindowSetting(
+          title: "App Update Channel".tl,
+          builder: () => const _AppUpdateChannelSettings(),
+        ).toSliver(),
         ListTile(
           title: const Text("Github"),
           trailing: const Icon(Icons.open_in_new),
@@ -88,22 +92,44 @@ class _AboutSettingsState extends State<AboutSettings> {
   }
 }
 
-Future<bool> checkUpdate() async {
-  var res = await AppDio()
-      .get("https://cdn.jsdelivr.net/gh/venera-app/venera@master/pubspec.yaml");
+class _UpdateCheckResult {
+  const _UpdateCheckResult({
+    required this.hasUpdate,
+    required this.remoteVersion,
+    required this.metaUrl,
+    required this.releaseUrl,
+  });
+
+  final bool hasUpdate;
+  final String remoteVersion;
+  final String metaUrl;
+  final String releaseUrl;
+}
+
+Future<_UpdateCheckResult> _checkUpdate() async {
+  var metaUrl = appdata.settings['appUpdateMetaUrl'].toString();
+  var releaseUrl = appdata.settings['appUpdateReleaseUrl'].toString();
+  var res = await AppDio().get(metaUrl);
   if (res.statusCode == 200) {
     var data = loadYaml(res.data);
     if (data["version"] != null) {
-      return _compareVersion(data["version"].split("+")[0], App.version);
+      var remoteVersion = data["version"].toString();
+      var hasUpdate = _compareVersionWithBuild(remoteVersion, App.fullVersion) > 0;
+      return _UpdateCheckResult(
+        hasUpdate: hasUpdate,
+        remoteVersion: remoteVersion,
+        metaUrl: metaUrl,
+        releaseUrl: releaseUrl,
+      );
     }
   }
-  return false;
+  throw Exception("Invalid update metadata");
 }
 
-Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = false]) async {
+Future<bool> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = false]) async {
   try {
-    var value = await checkUpdate();
-    if (value) {
+    var value = await _checkUpdate();
+    if (value.hasUpdate) {
       if (delay) {
         await Future.delayed(const Duration(seconds: 2));
       }
@@ -112,16 +138,28 @@ Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = fals
           builder: (context) {
             return ContentDialog(
               title: "New version available".tl,
-              content: Text(
-                      "A new version is available. Do you want to update now?"
-                          .tl)
-                  .paddingHorizontal(16),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("A new version is available. Do you want to update now?".tl),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Current version: ${App.fullVersion}",
+                    style: TextStyle(color: context.colorScheme.outline),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Remote version: ${value.remoteVersion}",
+                    style: TextStyle(color: context.colorScheme.outline),
+                  ),
+                ],
+              ).paddingHorizontal(16),
               actions: [
                 Button.text(
                   onPressed: () {
                     Navigator.pop(context);
-                    launchUrlString(
-                        "https://github.com/venera-app/venera/releases");
+                    launchUrlString(value.releaseUrl);
                   },
                   child: Text("Update".tl),
                 ),
@@ -129,24 +167,177 @@ Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = fals
             );
           });
     } else if (showMessageIfNoUpdate) {
-      App.rootContext.showMessage(message: "No new version available".tl);
+      App.rootContext.showMessage(
+        message: "No new version available".tl,
+      );
     }
+    return true;
   } catch (e, s) {
     Log.error("Check Update", e.toString(), s);
+    if (showMessageIfNoUpdate) {
+      App.rootContext.showMessage(message: "Update check failed".tl);
+    }
+    return false;
   }
 }
 
-/// return true if version1 > version2
-bool _compareVersion(String version1, String version2) {
-  var v1 = version1.split(".");
-  var v2 = version2.split(".");
-  for (var i = 0; i < v1.length; i++) {
-    if (int.parse(v1[i]) > int.parse(v2[i])) {
-      return true;
+int _compareVersionWithBuild(String version1, String version2) {
+  List<int> parseMain(String version) {
+    var v = version.trim();
+    if (v.startsWith("v") || v.startsWith("V")) {
+      v = v.substring(1);
     }
-    if (int.parse(v1[i]) < int.parse(v2[i])) {
-      return false;
+    var main = v.split("+").first;
+    return main
+        .split(".")
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList(growable: false);
+  }
+
+  int parseBuild(String version) {
+    var v = version.trim();
+    if (v.startsWith("v") || v.startsWith("V")) {
+      v = v.substring(1);
+    }
+    var parts = v.split("+");
+    if (parts.length < 2) {
+      return 0;
+    }
+    return int.tryParse(parts[1]) ?? 0;
+  }
+
+  var v1 = parseMain(version1);
+  var v2 = parseMain(version2);
+  var maxLen = v1.length > v2.length ? v1.length : v2.length;
+  for (var i = 0; i < maxLen; i++) {
+    var a = i < v1.length ? v1[i] : 0;
+    var b = i < v2.length ? v2[i] : 0;
+    if (a > b) {
+      return 1;
+    }
+    if (a < b) {
+      return -1;
     }
   }
-  return false;
+
+  var build1 = parseBuild(version1);
+  var build2 = parseBuild(version2);
+  if (build1 > build2) {
+    return 1;
+  }
+  if (build1 < build2) {
+    return -1;
+  }
+  return 0;
+}
+
+class _AppUpdateChannelSettings extends StatefulWidget {
+  const _AppUpdateChannelSettings();
+
+  @override
+  State<_AppUpdateChannelSettings> createState() => _AppUpdateChannelSettingsState();
+}
+
+class _AppUpdateChannelSettingsState extends State<_AppUpdateChannelSettings> {
+  static const _officialMetaUrl =
+      "https://cdn.jsdelivr.net/gh/venera-app/venera@master/pubspec.yaml";
+  static const _officialReleaseUrl = "https://github.com/venera-app/venera/releases";
+  static const _forkMetaUrl =
+      "https://cdn.jsdelivr.net/gh/prayer7777777/venera@main/pubspec.yaml";
+  static const _forkReleaseUrl = "https://github.com/prayer7777777/venera/releases";
+
+  final _metaUrlController = TextEditingController();
+  final _releaseUrlController = TextEditingController();
+
+  @override
+  void initState() {
+    _metaUrlController.text = appdata.settings['appUpdateMetaUrl'].toString();
+    _releaseUrlController.text = appdata.settings['appUpdateReleaseUrl'].toString();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _metaUrlController.dispose();
+    _releaseUrlController.dispose();
+    super.dispose();
+  }
+
+  bool _isValidUrl(String value) {
+    var uri = Uri.tryParse(value.trim());
+    return uri != null && (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: "App Update Channel".tl,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Update metadata URL".tl,
+                hintText: "pubspec.yaml URL".tl,
+                border: const OutlineInputBorder(),
+              ),
+              controller: _metaUrlController,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Release page URL".tl,
+                hintText: "GitHub releases URL".tl,
+                border: const OutlineInputBorder(),
+              ),
+              controller: _releaseUrlController,
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    _metaUrlController.text = _forkMetaUrl;
+                    _releaseUrlController.text = _forkReleaseUrl;
+                    setState(() {});
+                  },
+                  child: Text("Use Fork (Default)".tl),
+                ),
+                TextButton(
+                  onPressed: () {
+                    _metaUrlController.text = _officialMetaUrl;
+                    _releaseUrlController.text = _officialReleaseUrl;
+                    setState(() {});
+                  },
+                  child: Text("Use Official".tl),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () {
+                var metaUrl = _metaUrlController.text.trim();
+                var releaseUrl = _releaseUrlController.text.trim();
+                if (!_isValidUrl(metaUrl) || !_isValidUrl(releaseUrl)) {
+                  context.showMessage(message: "Invalid URL".tl);
+                  return;
+                }
+                appdata.settings['appUpdateMetaUrl'] = metaUrl;
+                appdata.settings['appUpdateReleaseUrl'] = releaseUrl;
+                appdata.saveData();
+                context.showMessage(message: "Saved".tl);
+                App.rootPop();
+              },
+              child: Text("Save".tl),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ).paddingHorizontal(16),
+      ),
+    );
+  }
 }

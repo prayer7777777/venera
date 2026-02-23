@@ -196,6 +196,8 @@ class Settings with ChangeNotifier {
     'longPressZoomPosition': "press", // press, center
     'checkUpdateOnStart': false,
     'autoUpdateComicSourcesOnStart': false,
+    'appUpdateMetaUrl': _defaultAppUpdateMetaUrl,
+    'appUpdateReleaseUrl': _defaultAppUpdateReleaseUrl,
     'limitImageWidth': true,
     'webdav': [], // empty means not configured
     "disableSyncFields": "", // "field1, field2, ..."
@@ -311,3 +313,9 @@ function processImage(image, cid, eid, page, sourceKey) {
 
 const _defaultSourceListUrl =
     "https://cdn.jsdelivr.net/gh/prayer7777777/venera-configs@fix/jm-query-404/index.json";
+
+const _defaultAppUpdateMetaUrl =
+    "https://cdn.jsdelivr.net/gh/prayer7777777/venera@main/pubspec.yaml";
+
+const _defaultAppUpdateReleaseUrl =
+    "https://github.com/prayer7777777/venera/releases";

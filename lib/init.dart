@@ -120,18 +120,24 @@ Future<void> _checkAppUpdates() async {
   if (now - lastCheck < 24 * 60 * 60 * 1000) {
     return;
   }
-  appdata.implicitData['lastCheckUpdate'] = now;
-  appdata.writeImplicitData();
+  var checkSuccess = true;
   try {
     var updates = await ComicSourcePage.checkComicSourceUpdate();
     if (updates > 0 && appdata.settings['autoUpdateComicSourcesOnStart'] == true) {
       await ComicSourcePage.autoUpdateAvailableSources();
     }
   } catch (e, s) {
+    checkSuccess = false;
     Log.error("Comic Source Auto Update", "$e", s);
   }
   if (appdata.settings['checkUpdateOnStart']) {
-    await checkUpdateUi(false, true);
+    var success = await checkUpdateUi(false, true);
+    checkSuccess = checkSuccess && success;
+  }
+
+  if (checkSuccess) {
+    appdata.implicitData['lastCheckUpdate'] = now;
+    appdata.writeImplicitData();
   }
 }
 
